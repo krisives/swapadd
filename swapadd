@@ -1,0 +1,34 @@
+#!/usr/bin/php
+<?php
+
+if ($argc < 3) {
+  die("USAGE: swapadd <file> <mb>\n");
+}
+
+$file = $argv[1];
+$mb = intval($argv[2]);
+
+if (file_exists($file)) {
+  die("ERROR: File already exists\n");
+}
+
+if ($mb <= 0) {
+  die("ERROR: Size in megabytes must be positive\n");
+}
+
+echo "Making empty swap file...\n";
+passthru("dd if=/dev/zero of=$file bs=1M count=$mb");
+passthru("chmod 600 $file");
+
+echo "Formatting swap file...\n";
+passthru("mkswap $file");
+
+echo "Adding to fstab...\n";
+$fstab = file_get_contents("/etc/fstab");
+$fstab .= "\n";
+$fstab .= "$file swap swap defaults 0 0\n";
+$fstab .= "\n";
+file_put_contents('/etc/fstab', $fstab);
+
+echo "Activating swap...\n";
+passthru("swapon -a");
